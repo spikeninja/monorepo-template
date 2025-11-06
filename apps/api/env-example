@@ -1,0 +1,10 @@
+APP_LEVEL=DEV
+
+BETTER_AUT_SECRET=supersecret
+BETTER_AUTH_URL=http://localhost:3001
+
+POSTGRES_DB=monorepo_db
+POSTGRES_USER=monorepo_user
+POSTGRES_HOST=localhost
+POSTGRES_PASSWORD=example
+POSTGRES_PORT=5432
