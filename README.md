@@ -36,3 +36,22 @@ To develop all apps and packages, run the following command:
 - Run `bun dev` to run all apps
 - Run `bun dev --filter=APP_NAME` to run a specific app
 - Run `bun add PACKAGE_NAME --cwd=apps/APP_NAME` to install a package to a specific app
+
+### Cursor AI rules (.cursor/)
+This is a disciplined prompting setup to standardize how the work is done with AI across editors.
+
+- Doctrine (auto-applied in Cursor):
+  - `.cursor/rules/core.md` — our operating “constitution” (Research‑First, Safety, Evidence, Self‑Audit). Cursor reads this passively.
+
+- Playbooks (paste to start tasks):
+  - `.cursor/rules/request.md` — build/refactor workflow.
+  - `.cursor/rules/refresh.md` — deep bug RCA and remediation.
+  - `.cursor/rules/retro.md` — session learnings and doctrine updates.
+
+- Directives (optional, paste when needed at the end of your prompt):
+  - `.cursor/rules/05-concise-directive.md` — radically concise reporting.
+  - `.cursor/rules/no-absolute-right-directive.md` — anti‑sycophantic communication.
+
+Usage:
+- Cursor: core.md is auto‑loaded; paste a playbook to begin, append directives if desired.
+- VS Code: paste the same playbooks/directives into your AI chat; core.md is shared as reference but not auto‑loaded by default.
