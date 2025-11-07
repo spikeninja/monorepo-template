@@ -33,6 +33,7 @@ bun turbo build --filter=APP_NAME
 
 To develop all apps and packages, run the following command:
 
+- Run `bun install` to install all dependencies
 - Run `bun dev` to run all apps
 - Run `bun dev --filter=APP_NAME` to run a specific app
 - Run `bun add PACKAGE_NAME --cwd=apps/APP_NAME` to install a package to a specific app
