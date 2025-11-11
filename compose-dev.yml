@@ -1,0 +1,110 @@
+name: lipz_dev
+services:
+  web:
+    build:
+      context: .
+      dockerfile: ./docker/Dockerfile.web.dev
+    container_name: lipz_web_dev
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./apps/web:/app/apps/web
+      - ./apps/api:/app/apps/api
+      - ./packages:/app/packages
+      - /app/node_modules
+      - /app/apps/web/node_modules
+      - /app/apps/api/node_modules
+    env_file:
+      - .env
+    environment:
+      - NODE_ENV=development
+      - API_URL=http://api:3001
+      - NEXT_PUBLIC_API_URL=http://localhost:3001
+    depends_on:
+      - api
+
+  api:
+    build:
+      context: .
+      dockerfile: ./docker/Dockerfile.api.dev
+    container_name: lipz_api_dev
+    ports:
+      - "3001:3001"
+    volumes:
+      - ./apps/api:/app/apps/api
+      - ./packages:/app/packages
+      - /app/node_modules
+      - /app/apps/api/node_modules
+    env_file:
+      - .env
+    environment:
+      - NODE_ENV=development
+      - POSTGRES_HOST=postgres_db
+      - REDIS_HOST=redis
+    depends_on:
+      - postgres_db
+      - redis
+
+  postgres_db:
+    image: postgres:17-alpine
+    container_name: lipz_pgsql_dev
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    environment:
+      - POSTGRES_DB=${POSTGRES_DB:-monorepo_db}
+      - POSTGRES_USER=${POSTGRES_USER:-monorepo_user}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-example}
+    env_file:
+      - .env
+
+  rabbit:
+    image: rabbitmq:4.1-management
+    container_name: lipz_rabbit_dev
+    ports:
+      - "${RABBIT_PORT:-5672}:5672"
+      - "15672:15672"
+    environment:
+      - RABBITMQ_DEFAULT_USER=${RABBIT_USER:-admin}
+      - RABBITMQ_DEFAULT_PASS=${RABBIT_PASSWORD:-admin}
+    volumes:
+      - rabbitmq_data:/var/lib/rabbitmq
+    healthcheck:
+      test: ['CMD', 'rabbitmq-diagnostics', 'ping']
+      interval: 60s
+      timeout: 5s
+      retries: 3
+      start_period: 5s
+
+  analytics_db:
+    image: postgres:17-alpine
+    container_name: lipz_analytics_dev
+    ports:
+      - "5434:5432"
+    volumes:
+      - analytics_postgres_data:/var/lib/postgresql/data
+    environment:
+      - POSTGRES_DB=${ANALYTICS_POSTGRES_DB:-analytics_db}
+      - POSTGRES_USER=${ANALYTICS_POSTGRES_USER:-analytics_user}
+      - POSTGRES_PASSWORD=${ANALYTICS_POSTGRES_PASSWORD:-example}
+
+  redis:
+    image: redis:7-alpine
+    container_name: lipz_redis_dev
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    command: redis-server --appendonly yes
+
+volumes:
+  postgres_data:
+    name: lipz_pgsql_dev_data
+  analytics_postgres_data:
+    name: lipz_analytics_pgsql_dev_data
+  redis_data:
+    name: lipz_redis_dev
+  rabbitmq_data:
+    name: lipz_rabbitmq_dev
+

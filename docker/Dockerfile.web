@@ -1,0 +1,74 @@
+FROM node:20-alpine AS base
+
+# Install dependencies only when needed
+FROM base AS deps
+RUN apk add --no-cache libc6-compat
+WORKDIR /app
+
+# Install Bun
+RUN npm install -g bun
+
+# Copy package files
+COPY package.json bun.lock ./
+COPY apps/api/package.json ./apps/api/
+COPY apps/web/package.json ./apps/web/
+COPY packages/typescript-config/package.json ./packages/typescript-config/
+COPY packages/ui/package.json ./packages/ui/
+COPY packages/eslint-config/package.json ./packages/eslint-config/
+
+# Install dependencies
+RUN bun install --frozen-lockfile
+
+# Build API first (since web depends on it)
+FROM base AS api-builder
+WORKDIR /app
+
+RUN npm install -g bun
+
+COPY --from=deps /app/node_modules ./node_modules
+COPY apps/api ./apps/api
+COPY packages ./packages
+COPY package.json bun.lock turbo.json ./
+
+RUN cd apps/api && bun run build
+
+# Build web
+FROM base AS web-builder
+WORKDIR /app
+
+RUN npm install -g bun
+
+COPY --from=deps /app/node_modules ./node_modules
+COPY --from=api-builder /app/apps/api/dist ./apps/api/dist
+COPY . .
+
+# Build Next.js
+RUN cd apps/web && bun run build
+
+# Production image
+FROM base AS runner
+WORKDIR /app
+
+ENV NODE_ENV=production
+
+RUN addgroup --system --gid 1001 nodejs
+RUN adduser --system --uid 1001 nextjs
+
+# Copy built application
+COPY --from=web-builder /app/apps/web/public ./apps/web/public
+COPY --from=web-builder --chown=nextjs:nodejs /app/apps/web/.next ./apps/web/.next
+COPY --from=web-builder /app/node_modules ./node_modules
+COPY --from=web-builder /app/apps/web/node_modules ./apps/web/node_modules
+COPY --from=web-builder /app/apps/web/package.json ./apps/web/package.json
+
+USER nextjs
+
+WORKDIR /app/apps/web
+
+EXPOSE 3000
+
+ENV PORT=3000
+ENV HOSTNAME="0.0.0.0"
+
+CMD ["node_modules/.bin/next", "start"]
+
