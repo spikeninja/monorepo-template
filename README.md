@@ -80,3 +80,27 @@ This is a disciplined prompting setup to standardize how the work is done with A
 Usage:
 - Cursor: core.md is auto‑loaded; paste a playbook to begin, append directives if desired.
 - VS Code: paste the same playbooks/directives into your AI chat; core.md is shared as reference but not auto‑loaded by default.
+
+### Docker Setup
+
+This project includes Docker Compose configurations for both development and production environments.
+
+**Development:**
+```bash
+docker compose -f compose-dev.yml up
+```
+
+**Production:**
+```bash
+docker compose -f compose-prod.yml up -d
+```
+
+For detailed Docker instructions, see [DOCKER.md](./DOCKER.md)
+
+**Services included:**
+- Web (Next.js) on port 3000
+- API (Hono) on port 3001
+- PostgreSQL on port 5432
+- Analytics Database on port 5434
+- Redis on port 6379
+- RabbitMQ on ports 5672 and 15672 (management UI)
