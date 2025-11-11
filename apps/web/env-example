@@ -1,2 +1,8 @@
 BETTER_AUT_SECRET=supersecret
 BETTER_AUTH_URL=http://localhost:3001
+
+# API URLs
+# Server-side URL (used inside Docker container)
+API_URL=http://api:3001
+# Client-side URL (used in browser)
+NEXT_PUBLIC_API_URL=http://localhost:3001

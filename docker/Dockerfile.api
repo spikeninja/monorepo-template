@@ -1,0 +1,54 @@
+FROM node:20-alpine AS base
+
+# Install dependencies only when needed
+FROM base AS deps
+RUN apk add --no-cache libc6-compat
+WORKDIR /app
+
+# Install Bun
+RUN npm install -g bun
+
+# Copy package files
+COPY package.json bun.lock ./
+COPY apps/api/package.json ./apps/api/
+COPY packages/eslint-config/package.json ./packages/eslint-config/
+COPY packages/typescript-config/package.json ./packages/typescript-config/
+COPY packages/ui/package.json ./packages/ui/
+
+# Install dependencies
+RUN bun install --frozen-lockfile
+
+# Build stage
+FROM base AS builder
+WORKDIR /app
+
+# Install Bun
+RUN npm install -g bun
+
+COPY --from=deps /app/node_modules ./node_modules
+COPY . .
+
+# Build API
+RUN cd apps/api && bun run build
+
+# Production image
+FROM base AS runner
+WORKDIR /app
+
+ENV NODE_ENV=production
+
+# Install Bun
+RUN npm install -g bun
+
+# Copy necessary files
+COPY --from=builder /app/apps/api/dist ./apps/api/dist
+COPY --from=builder /app/apps/api/package.json ./apps/api/
+COPY --from=deps /app/node_modules ./node_modules
+COPY --from=deps /app/apps/api/node_modules ./apps/api/node_modules
+
+WORKDIR /app/apps/api
+
+EXPOSE 3001
+
+CMD ["node", "dist/index.js"]
+

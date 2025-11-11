@@ -1,0 +1,102 @@
+name: lipz_prod
+services:
+  web:
+    build:
+      context: .
+      dockerfile: ./docker/Dockerfile.web
+    container_name: lipz_web_prod
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    env_file:
+      - .env
+    environment:
+      - NODE_ENV=production
+      - API_URL=http://api:3001
+      - NEXT_PUBLIC_API_URL=http://api:3001
+    depends_on:
+      - api
+
+  api:
+    build:
+      context: .
+      dockerfile: ./docker/Dockerfile.api
+    container_name: lipz_api_prod
+    restart: unless-stopped
+    ports:
+      - "3001:3001"
+    env_file:
+      - .env
+    environment:
+      - NODE_ENV=production
+      - POSTGRES_HOST=postgres_db
+      - REDIS_HOST=redis
+    depends_on:
+      - postgres_db
+      - redis
+
+  postgres_db:
+    image: postgres:17-alpine
+    container_name: lipz_pgsql_prod
+    restart: unless-stopped
+    ports:
+      - "5433:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    environment:
+      - POSTGRES_DB=${POSTGRES_DB:-monorepo_db}
+      - POSTGRES_USER=${POSTGRES_USER:-monorepo_user}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-example}
+    env_file:
+      - .env
+
+  rabbit:
+    image: rabbitmq:4.1-management
+    container_name: lipz_rabbit_prod
+    restart: unless-stopped
+    ports:
+      - "${RABBIT_PORT:-5672}:5672"
+      - "15672:15672"
+    environment:
+      - RABBITMQ_DEFAULT_USER=${RABBIT_USER:-admin}
+      - RABBITMQ_DEFAULT_PASS=${RABBIT_PASSWORD:-admin}
+    volumes:
+      - rabbitmq_data:/var/lib/rabbitmq
+    healthcheck:
+      test: ['CMD', 'rabbitmq-diagnostics', 'ping']
+      interval: 60s
+      timeout: 5s
+      retries: 3
+      start_period: 5s
+
+  analytics_db:
+    image: postgres:17-alpine
+    container_name: lipz_analytics_prod
+    restart: unless-stopped
+    ports:
+      - "5434:5432"
+    volumes:
+      - analytics_postgres_data:/var/lib/postgresql/data
+    environment:
+      - POSTGRES_DB=${ANALYTICS_POSTGRES_DB:-analytics_db}
+      - POSTGRES_USER=${ANALYTICS_POSTGRES_USER:-analytics_user}
+      - POSTGRES_PASSWORD=${ANALYTICS_POSTGRES_PASSWORD:-example}
+
+  redis:
+    image: redis:7-alpine
+    container_name: lipz_redis_prod
+    restart: unless-stopped
+    volumes:
+      - redis_data:/data
+    command: redis-server --appendonly yes
+
+volumes:
+  postgres_data:
+    name: lipz_pgsql_prod_data
+  analytics_postgres_data:
+    name: lipz_analytics_pgsql_prod_data
+  redis_data:
+    name: lipz_redis_prod
+  rabbitmq_data:
+    name: lipz_rabbitmq_prod
+
