@@ -1,0 +1,60 @@
+name: Deploy to Production
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  deploy:
+    runs-on: self-hosted
+    steps:
+      - name: Pull latest main version
+        run: git pull origin main
+        working-directory: ${{ github.workspace }}
+
+      - name: Check if .env file exists
+        run: |
+          if [ ! -f .env ]; then
+            echo ".env file not found. Please ensure .env is configured on the server."
+            exit 1
+          fi
+        working-directory: ${{ github.workspace }}
+
+      - name: Stop and remove existing containers
+        run: |
+          echo "Stopping and removing existing containers..."
+          docker compose -f compose-prod.yml down
+        working-directory: ${{ github.workspace }}
+
+      - name: Build and deploy with Docker Compose
+        run: |
+          echo "Building and starting containers..."
+          docker compose -f compose-prod.yml up -d --build
+        working-directory: ${{ github.workspace }}
+
+      - name: Verify containers are running
+        run: |
+          echo "Listing all running containers:"
+          docker ps -a
+          echo ""
+          echo "Checking service health:"
+          docker compose -f compose-prod.yml ps
+        working-directory: ${{ github.workspace }}
+
+      - name: Show container logs (last 50 lines)
+        run: |
+          echo "=== API Logs ==="
+          docker logs lipz_api_prod --tail 50
+          echo ""
+          echo "=== Web Logs ==="
+          docker logs lipz_web_prod --tail 50
+        working-directory: ${{ github.workspace }}
+
+      - name: Prune Docker resources
+        run: |
+          echo "Cleaning up unused Docker resources..."
+          docker system prune -f
+          docker image prune -f
+        working-directory: ${{ github.workspace }}
+
